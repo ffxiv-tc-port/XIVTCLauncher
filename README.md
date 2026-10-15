@@ -1,3 +1,28 @@
+<!-- ffxiv-tc-port 繁體中文說明開始 -->
+# XIVTCLauncher(台服 fork)
+
+台服啟動器 FFXIVSimpleLauncher（作者 cycleapple）的原始碼鏡像（上游 [cycleapple/XIVTCLauncher](https://github.com/cycleapple/XIVTCLauncher)）。它負責登入台服（可存帳號、自動產生 OTP）、檢查遊戲更新，並在啟動遊戲時注入 Dalamud。
+
+## 台服 fork 的目的
+
+- 留一份原始碼方便查：設定檔格式、Dalamud 注入流程、自動下載 Dalamud 的來源。
+- 本 org 的 Dalamud 是靠這個啟動器的「手動指定路徑」模式載入：Dalamud 設定選手動指定路徑，指向我方 Dalamud fork 的部署目錄；選自動下載時用的是上游指定的 Dalamud，不是本 org 的版本。
+
+## 與上游的差異
+
+- 沒有我方撰寫的 commit；鏡像不會自動跟上游同步。
+- 實際安裝的啟動器是上游發佈的版本，自我更新也指向上游，不是這個鏡像。
+- 這個 repo 帶著上游的 `update-dalamud-manifest.yml` 排程工作流程（每 6 小時一次），會在這裡自動 commit `cdn/dalamud/latest-release.json`，所以分支頂端可能有上游沒有的機器人 commit；啟動器讀的是上游 repo 的那份檔案，不讀這裡的。
+
+## 誰在用它
+
+- 沒有其他 repo 以子模組或專案參照使用它。
+
+---
+
+以下為上游原始 README，內容未經修改：
+
+<!-- ffxiv-tc-port 繁體中文說明結束 -->
 # XIVTCLauncher (FFXIVSimpleLauncher)
 
 [English](README_en.md) | [繁體中文](README.md)

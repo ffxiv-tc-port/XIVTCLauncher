@@ -86,3 +86,4 @@ jobs:
             -Uri "https://purge.jsdelivr.net/gh/cycleapple/XIVTCLauncher@main/cdn/dalamud/latest-release.json" `
             -Headers @{ "User-Agent" = "XIVTCLauncher-manifest-updater" } |
             ConvertTo-Json -Depth 10
+# workflow re-registration trigger 2026-10-26T13:40:57Z

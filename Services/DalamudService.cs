@@ -12,7 +12,7 @@ namespace FFXIVSimpleLauncher.Services;
 
 /// <summary>
 /// Dalamud service supporting both auto-download and local path modes.
-/// Downloads Dalamud from yanmucorp/Dalamud and assets from yanmucorp/DalamudAssets.
+/// Downloads Dalamud from ffxiv-tc-port/Dalamud and assets from yanmucorp/DalamudAssets.
 /// </summary>
 public class DalamudService
 {

@@ -7,19 +7,19 @@ using SevenZipExtractor;
 namespace FFXIVSimpleLauncher.Services;
 
 /// <summary>
-/// Downloads and manages Dalamud from yanmucorp/Dalamud releases.
+/// Downloads and manages Dalamud from ffxiv-tc-port/Dalamud releases.
 /// </summary>
 public class DalamudDownloader
 {
-    // yanmucorp/Dalamud release API
-    private const string RELEASES_API_URL = "https://api.github.com/repos/yanmucorp/Dalamud/releases/latest";
+    // ffxiv-tc-port/Dalamud release API
+    private const string RELEASES_API_URL = "https://api.github.com/repos/ffxiv-tc-port/Dalamud/releases/latest";
     private static readonly string[] RELEASE_MANIFEST_URLS =
     {
         RELEASES_API_URL,
-        "https://cdn.jsdelivr.net/gh/cycleapple/XIVTCLauncher@main/cdn/dalamud/latest-release.json",
-        "https://fastly.jsdelivr.net/gh/cycleapple/XIVTCLauncher@main/cdn/dalamud/latest-release.json",
+        "https://cdn.jsdelivr.net/gh/ffxiv-tc-port/XIVTCLauncher@main/cdn/dalamud/latest-release.json",
+        "https://fastly.jsdelivr.net/gh/ffxiv-tc-port/XIVTCLauncher@main/cdn/dalamud/latest-release.json",
     };
-    private const string RELEASES_URL = "https://github.com/yanmucorp/Dalamud/releases";
+    private const string RELEASES_URL = "https://github.com/ffxiv-tc-port/Dalamud/releases";
 
     private readonly DirectoryInfo _dalamudDirectory;
     private readonly HttpClient _httpClient;

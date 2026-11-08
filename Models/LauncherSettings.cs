@@ -3,7 +3,7 @@ namespace FFXIVSimpleLauncher.Models;
 public enum DalamudSourceMode
 {
     /// <summary>
-    /// Automatically download from yanmucorp/Dalamud releases.
+    /// Automatically download from ffxiv-tc-port/Dalamud releases.
     /// </summary>
     AutoDownload,
 

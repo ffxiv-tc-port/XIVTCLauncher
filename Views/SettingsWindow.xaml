@@ -114,7 +114,7 @@
                     <StackPanel Orientation="Vertical">
                         <TextBlock Text="自動下載 (推薦)"
                                    FontWeight="Medium"/>
-                        <TextBlock Text="自動從 yanmucorp/Dalamud 下載最新版本"
+                        <TextBlock Text="自動從 ffxiv-tc-port/Dalamud 下載最新版本"
                                    FontSize="11"
                                    Foreground="{DynamicResource AppTextSecondaryBrush}"/>
                     </StackPanel>

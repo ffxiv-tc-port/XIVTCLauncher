@@ -1,5 +1,6 @@
 # 啟動器發版：手動觸發，產出 XIVTCLauncher-v<版號>.zip（framework-dependent，需 .NET 8 Desktop Runtime）＋latest-release.json。
 # 版號 v<VERSION_BASE>.N：留空＝自動推進 N；填既有版號＝重發（標籤移到這次的 commit、資產覆蓋）。
+# 平常更新一律留空推進 N；重發只用來補救發版失敗——已裝同版號的啟動器比對版號相同，不會重抓。
 # 這份啟動器的 Dalamud 來源是 ffxiv-tc-port/Dalamud 的 release（見 Services/DalamudDownloader.cs）。
 name: Release
 
@@ -7,7 +8,7 @@ on:
   workflow_dispatch:
     inputs:
       version:
-        description: '版號，例如 7.25.0.3（留空＝自動推進；填既有版號＝重發覆蓋）'
+        description: '版號。平常更新一律留空（自動推進 N）；填既有版號＝重發覆蓋，只用來補救發版失敗（已安裝同版號的人不會重抓）'
         required: false
         default: ''
 
@@ -180,3 +181,22 @@ jobs:
             if ($LASTEXITCODE) { throw 'create failed' }
           }
           gh release view $env:TAG --repo $repo --json tagName,assets --jq '{tag: .tagName, assets: [.assets[] | {name, size}]}'
+
+      # 自我更新的備援來源（raw／jsDelivr）讀 main 上的 cdn/launcher/latest-release.json；只在這次是最高版時同步。
+      # 失敗不讓整個 run 變紅：release 已經發出，備援清單落後只影響 GitHub release 讀不到時的使用者。
+      - name: Update launcher CDN manifest
+        if: env.MAKE_LATEST == 'true'
+        continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repo = $env:GITHUB_REPOSITORY
+          $path = 'cdn/launcher/latest-release.json'
+          $branch = '${{ github.event.repository.default_branch }}'
+          $content = [Convert]::ToBase64String([IO.File]::ReadAllBytes((Join-Path $env:STAGE 'latest-release.json')))
+          $sha = gh api "repos/$repo/contents/$($path)?ref=$branch" --jq .sha
+          if ($LASTEXITCODE) { throw 'reading current manifest failed' }
+          gh api -X PUT "repos/$repo/contents/$path" -f "message=更新啟動器 CDN 清單到 $env:TAG" -f "content=$content" -f "sha=$sha" -f "branch=$branch" --jq '.commit.sha'
+          if ($LASTEXITCODE) { throw 'updating manifest failed' }
+          Invoke-RestMethod -Uri "https://purge.jsdelivr.net/gh/$repo@$branch/$path" -Headers @{ 'User-Agent' = 'XIVTCLauncher-release' } | ConvertTo-Json -Depth 10

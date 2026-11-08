@@ -22,7 +22,7 @@ internal sealed record GitHubRouteReport(DateTimeOffset TestedAt, GitHubRouteRes
 internal sealed class GitHubRouteOptimizer
 {
     internal const string RawProbe = "https://raw.githubusercontent.com/github/gitignore/main/README.md";
-    private const string Manifest = "https://github.com/cycleapple/XIVTCLauncher/releases/latest/download/latest-release.json";
+    private const string Manifest = LauncherUpdateService.StableManifestUrl;
 
     internal static async Task<string[]> GetRangesAsync(CancellationToken ct)
     {
@@ -76,7 +76,7 @@ internal sealed class GitHubRouteOptimizer
         client.DefaultRequestHeaders.UserAgent.ParseAdd("XIVTCLauncher-RouteTest/1.0");
         using var manifest = JsonDocument.Parse(await client.GetStringAsync(Manifest, ct));
         var uri = new Uri(manifest.RootElement.GetProperty("assets")[0].GetProperty("browser_download_url").GetString()!);
-        if (uri.Scheme != "https" || uri.Host != "github.com" || !uri.AbsolutePath.StartsWith("/cycleapple/XIVTCLauncher/releases/download/", StringComparison.Ordinal))
+        if (uri.Scheme != "https" || uri.Host != "github.com" || !uri.AbsolutePath.StartsWith("/ffxiv-tc-port/XIVTCLauncher/releases/download/", StringComparison.Ordinal))
             throw new InvalidDataException("測速檔案網址不符合預期。");
         using var response = await client.GetAsync(uri, HttpCompletionOption.ResponseHeadersRead, ct);
         response.EnsureSuccessStatusCode();

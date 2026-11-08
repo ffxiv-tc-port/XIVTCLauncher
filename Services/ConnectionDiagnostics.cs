@@ -27,9 +27,9 @@ internal static class ConnectionDiagnostics
             new("帳號登入服務", "user.ffxiv.com.tw", Port: 443),
             new("遊戲大廳", "neolobby01.ffxiv.com.tw", Port: 54994),
             new("更新下載伺服器", "patch-dl.ffxiv.com.tw", Port: 80),
-            new("Dalamud 更新資訊", "https://api.github.com/repos/yanmucorp/Dalamud/releases/latest", true),
+            new("Dalamud 更新資訊", "https://api.github.com/repos/ffxiv-tc-port/Dalamud/releases/latest", true),
             new("GitHub Raw", "https://raw.githubusercontent.com/yanmucorp/DalamudAssets/master/assetCN.json", true),
-            new("GitHub Release 下載入口", "https://github.com/cycleapple/XIVTCLauncher/releases/latest/download/latest-release.json", true)
+            new("GitHub Release 下載入口", LauncherUpdateService.StableManifestUrl, true)
         };
         if (versions.TryGetValue(0, out var version) && !string.IsNullOrWhiteSpace(version))
         {

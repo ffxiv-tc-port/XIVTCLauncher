@@ -97,7 +97,7 @@ public partial class MainViewModel : ObservableObject
     /// <summary>
     /// Application version from assembly.
     /// </summary>
-    public string AppVersion => $"v{Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "1.0.0"}";
+    public string AppVersion => $"v{Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "1.0.0.0"}";
 
     partial void OnSelectedAccountChanged(Account? value)
     {

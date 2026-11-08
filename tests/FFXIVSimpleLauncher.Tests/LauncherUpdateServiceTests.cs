@@ -21,9 +21,44 @@ public sealed class LauncherUpdateServiceTests
     [InlineData("1.14.17", "1.15.0", -1)]
     [InlineData("1.15.0", "1.15.0", 0)]
     [InlineData("1.16.0", "1.15.0", 1)]
+    [InlineData("7.25.0.1", "7.25.0.2", -1)]
+    [InlineData("7.25.0.2", "7.25.0.2", 0)]
+    [InlineData("7.25.0.10", "7.25.0.9", 1)]
+    [InlineData("1.19.0", "1.19.0.0", 0)]
+    [InlineData("1.19.0.0", "7.25.0.1", -1)]
     public void CompareVersions_UsesNumericVersionOrdering(string current, string latest, int expected)
     {
         Assert.Equal(expected, Math.Sign(LauncherUpdateService.CompareVersions(current, latest)));
+    }
+
+    [Theory]
+    [InlineData("7.25.0.2", "7.25.0.2", false)]
+    [InlineData("7.25.0.2", "7.25.0.3", true)]
+    [InlineData("7.25.0.3", "7.25.0.2", false)]
+    public async Task CheckForUpdates_ComparesFourPartVersions(string current, string latest, bool expected)
+    {
+        var manifest = $$"""
+            {
+              "tag_name": "v{{latest}}",
+              "version": "{{latest}}",
+              "assets": [{
+                "name": "XIVTCLauncher-v{{latest}}.zip",
+                "browser_download_url": "https://example.test/XIVTCLauncher-v{{latest}}.zip",
+                "size": 123
+              }]
+            }
+            """;
+        var handler = new StubHttpMessageHandler(_ => new HttpResponseMessage(HttpStatusCode.OK)
+        {
+            Content = new StringContent(manifest, Encoding.UTF8, "application/json")
+        });
+
+        using var client = new HttpClient(handler);
+        var temp = new DirectoryInfo(Path.Combine(Path.GetTempPath(), Guid.NewGuid().ToString("N")));
+        var service = new LauncherUpdateService(client, current, temp);
+
+        Assert.Equal(expected, await service.CheckForUpdatesAsync());
+        Assert.Equal(latest, service.LatestVersion);
     }
 
     [Fact]

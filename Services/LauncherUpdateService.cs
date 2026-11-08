@@ -16,18 +16,18 @@ namespace FFXIVSimpleLauncher.Services;
 /// </summary>
 public class LauncherUpdateService
 {
-    private const string RepositoryBaseUrl = "https://github.com/cycleapple/XIVTCLauncher";
-    private const string ReleasesApiUrl = "https://api.github.com/repos/cycleapple/XIVTCLauncher/releases/latest";
+    internal const string RepositoryBaseUrl = "https://github.com/ffxiv-tc-port/XIVTCLauncher";
+    private const string ReleasesApiUrl = "https://api.github.com/repos/ffxiv-tc-port/XIVTCLauncher/releases/latest";
     private const string ReleasesPageUrl = RepositoryBaseUrl + "/releases";
-    private const string StableManifestUrl = RepositoryBaseUrl + "/releases/latest/download/latest-release.json";
+    internal const string StableManifestUrl = RepositoryBaseUrl + "/releases/latest/download/latest-release.json";
 
     private static readonly string[] ManifestUrls =
     {
         StableManifestUrl,
-        "https://raw.githubusercontent.com/cycleapple/XIVTCLauncher/main/cdn/launcher/latest-release.json",
+        "https://raw.githubusercontent.com/ffxiv-tc-port/XIVTCLauncher/main/cdn/launcher/latest-release.json",
         ReleasesApiUrl,
-        "https://cdn.jsdelivr.net/gh/cycleapple/XIVTCLauncher@main/cdn/launcher/latest-release.json",
-        "https://fastly.jsdelivr.net/gh/cycleapple/XIVTCLauncher@main/cdn/launcher/latest-release.json"
+        "https://cdn.jsdelivr.net/gh/ffxiv-tc-port/XIVTCLauncher@main/cdn/launcher/latest-release.json",
+        "https://fastly.jsdelivr.net/gh/ffxiv-tc-port/XIVTCLauncher@main/cdn/launcher/latest-release.json"
     };
 
     private readonly HttpClient _httpClient;
@@ -45,7 +45,7 @@ public class LauncherUpdateService
 
     public LauncherUpdateService()
         : this(CreateHttpClient(),
-            Assembly.GetExecutingAssembly().GetName().Version?.ToString(3) ?? "0.0.0",
+            Assembly.GetExecutingAssembly().GetName().Version?.ToString() ?? "0.0.0.0",
             new DirectoryInfo(Path.Combine(Path.GetTempPath(), "XIVTCLauncher-Update")))
     {
     }
@@ -450,14 +450,18 @@ public class LauncherUpdateService
             : null;
     }
 
+    // 版號是 7.25.0.N，第四段才是遞增位；缺的段補 0（1.19.0＝1.19.0.0），否則 System.Version 把缺段當 -1 而比較不等。
     internal static int CompareVersions(string v1, string v2)
     {
         if (!Version.TryParse(v1, out var version1))
             return -1;
         if (!Version.TryParse(v2, out var version2))
             return 1;
-        return version1.CompareTo(version2);
+        return Normalize(version1).CompareTo(Normalize(version2));
     }
+
+    private static Version Normalize(Version v) =>
+        new(v.Major, v.Minor, Math.Max(v.Build, 0), Math.Max(v.Revision, 0));
 
     private static async Task<string> ComputeSha256Async(string path, CancellationToken ct)
     {
@@ -476,8 +480,8 @@ public class LauncherUpdateService
         if (string.IsNullOrWhiteSpace(expectedVersion))
             return;
 
-        var actualVersion = AssemblyName.GetAssemblyName(assembly).Version?.ToString(3);
-        if (!string.Equals(actualVersion, expectedVersion, StringComparison.OrdinalIgnoreCase))
+        var actualVersion = AssemblyName.GetAssemblyName(assembly).Version?.ToString();
+        if (actualVersion == null || CompareVersions(actualVersion, expectedVersion) != 0)
             throw new InvalidDataException($"更新包版本不符：預期 {expectedVersion}，實際 {actualVersion ?? "未知"}");
     }
 

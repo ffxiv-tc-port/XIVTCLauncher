@@ -1,16 +1,16 @@
 {
   "schema_version": 1,
-  "tag_name": "v1.19.0",
-  "version": "1.19.0",
-  "name": "XIV TC Launcher v1.19.0",
-  "published_at": "2026-10-22T09:54:55Z",
-  "body": "新增連線診斷與可複製報告。更新伺服器檢查失敗但大廳可連線時，以紅綠燈顯示狀態，提供本次略過更新檢查並登入，不修改永久設定。",
+  "tag_name": "v7.25.0.1",
+  "version": "7.25.0.1",
+  "name": "XIV TC Launcher v7.25.0.1",
+  "published_at": "2026-11-08T13:02:17Z",
+  "body": "台服啟動器 7.25.0.1；Dalamud 從 ffxiv-tc-port/Dalamud 的 release 下載。",
   "assets": [
     {
-      "name": "XIVTCLauncher-v1.19.0.zip",
-      "browser_download_url": "https://github.com/cycleapple/XIVTCLauncher/releases/download/v1.19.0/XIVTCLauncher-v1.19.0.zip",
-      "size": 5909816,
-      "sha256": "bba7b2162bd11e27c14598141e7885082286c0148756771f821d6a8c5a27b7ba"
+      "name": "XIVTCLauncher-v7.25.0.1.zip",
+      "browser_download_url": "https://github.com/ffxiv-tc-port/XIVTCLauncher/releases/download/v7.25.0.1/XIVTCLauncher-v7.25.0.1.zip",
+      "size": 5913088,
+      "sha256": "87ce774b0077cf57c4f73790555c6eea68c6e11578174ddcb72a49a13242e501"
     }
   ]
 }

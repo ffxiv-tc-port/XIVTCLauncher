@@ -148,6 +148,10 @@ public class DalamudDownloader
                 if (string.IsNullOrWhiteSpace(release?.TagName))
                     throw new InvalidDataException("release manifest is missing tag_name");
 
+                // 同一 repo 也發插件 CI 用的相依包；latest 若指到沒有 latest.7z 的 release，改試下一個來源（CDN 清單）。
+                if (release.Assets?.Any(a => a.Name?.Equals("latest.7z", StringComparison.OrdinalIgnoreCase) == true) != true)
+                    throw new InvalidDataException($"release {release.TagName} has no latest.7z");
+
                 return release;
             }
             catch (Exception ex)

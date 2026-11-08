@@ -1,0 +1,182 @@
+# 啟動器發版：手動觸發，產出 XIVTCLauncher-v<版號>.zip（framework-dependent，需 .NET 8 Desktop Runtime）＋latest-release.json。
+# 版號 v<VERSION_BASE>.N：留空＝自動推進 N；填既有版號＝重發（標籤移到這次的 commit、資產覆蓋）。
+# 這份啟動器的 Dalamud 來源是 ffxiv-tc-port/Dalamud 的 release（見 Services/DalamudDownloader.cs）。
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: '版號，例如 7.25.0.3（留空＝自動推進；填既有版號＝重發覆蓋）'
+        required: false
+        default: ''
+
+permissions:
+  contents: write
+
+concurrency:
+  group: launcher-release
+  cancel-in-progress: false
+
+env:
+  VERSION_BASE: '7.25.0'
+  DOTNET_NOLOGO: 'true'
+  DOTNET_CLI_TELEMETRY_OPTOUT: 'true'
+
+jobs:
+  build:
+    runs-on: windows-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        shell: pwsh
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install .NET
+        uses: actions/setup-dotnet@v5
+        with:
+          dotnet-version: '8.0.x'
+
+      - name: Resolve version
+        env:
+          GH_TOKEN: ${{ github.token }}
+          INPUT_VERSION: ${{ inputs.version }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $base = $env:VERSION_BASE
+          $tags = @(gh release list --repo $env:GITHUB_REPOSITORY --limit 1000 --json tagName --jq '.[].tagName')
+          if ($LASTEXITCODE -ne 0) { throw 'gh release list failed' }
+          $vers = @($tags | Where-Object { $_ -match '^v\d+\.\d+\.\d+\.\d+$' } | ForEach-Object { [version]$_.Substring(1) })
+          $ceiling = [version]"$base.2147483647"
+          $newer = @($vers | Where-Object { $_ -gt $ceiling })
+          if ($newer.Count -gt 0) { throw "existing release $($newer[0]) is newer than VERSION_BASE $base; update VERSION_BASE" }
+          $inp = "$env:INPUT_VERSION".Trim().TrimStart('v', 'V')
+          if ($inp) {
+            if ($inp -notmatch '^\d+\.\d+\.\d+\.\d+$') { throw "invalid version: $inp" }
+            $ver = [version]$inp
+          } else {
+            $last = $vers | Where-Object { "$($_.Major).$($_.Minor).$($_.Build)" -eq $base } | Sort-Object -Descending | Select-Object -First 1
+            $ver = if ($last) { [version]"$base.$($last.Revision + 1)" } else { [version]"$base.1" }
+          }
+          $tag = "v$ver"
+          $exists = $tags -contains $tag
+          $top = @($vers + $ver | Sort-Object -Descending)[0]
+          $latest = if ($top -eq $ver) { 'true' } else { 'false' }
+          "VER=$ver", "TAG=$tag", "REPUBLISH=$($exists.ToString().ToLowerInvariant())", "MAKE_LATEST=$latest" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+          Write-Host "version $ver tag $tag republish=$exists latest=$latest"
+
+      - name: Test
+        run: dotnet test tests/FFXIVSimpleLauncher.Tests/FFXIVSimpleLauncher.Tests.csproj -c Release
+
+      - name: Publish
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $out = Join-Path $env:RUNNER_TEMP 'launcher'
+          dotnet publish FFXIVSimpleLauncher.csproj -c Release -o $out "-p:Version=$env:VER" "-p:AssemblyVersion=$env:VER" "-p:FileVersion=$env:VER"
+          if ($LASTEXITCODE) { throw 'dotnet publish failed' }
+          $exe = Join-Path $out 'FFXIVSimpleLauncher.exe'
+          if (-not (Test-Path -LiteralPath $exe)) { throw 'FFXIVSimpleLauncher.exe missing' }
+          $fv = (Get-Item -LiteralPath $exe).VersionInfo.FileVersion
+          if ($fv -ne $env:VER) { throw "FileVersion $fv does not match $env:VER" }
+          # 與上游發版包同形：根目錄也放一份 x64 的 WebView2Loader.dll（網頁登入用）。
+          Copy-Item -LiteralPath (Join-Path $out 'runtimes/win-x64/native/WebView2Loader.dll') -Destination $out
+          foreach ($f in 'FFXIVSimpleLauncher.dll', 'SevenZipExtractor.dll', 'x64/7z.dll', 'WebView2Loader.dll') {
+            if (-not (Test-Path -LiteralPath (Join-Path $out $f))) { throw "missing $f" }
+          }
+          "OUT=$out" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: 帳號痕跡閘門（上傳前；needle 由 secret 提供，讀不到就不放行）
+        env:
+          LEAK_GUARD_NEEDLE: ${{ secrets.LEAK_GUARD_NEEDLE }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $n = "$env:LEAK_GUARD_NEEDLE".Trim().ToLowerInvariant()
+          if ($n.Length -lt 4 -or $n -cnotmatch '^[a-z0-9_.-]+$') { throw "secret LEAK_GUARD_NEEDLE is empty or malformed (length $($n.Length)); refusing to upload" }
+          $L = [Text.Encoding]::Latin1
+          $cases = [Collections.Generic.HashSet[string]]::new([StringComparer]::Ordinal)
+          [void]$cases.Add($n); [void]$cases.Add($n.Substring(0, 1).ToUpperInvariant() + $n.Substring(1)); [void]$cases.Add($n.ToUpperInvariant())
+          $pats = @(foreach ($c in $cases) { ,@($c, 1); ,@((-join ($c.ToCharArray() | ForEach-Object { [string]$_ + [char]0 })), 2) })
+          $full = [int][Math]::Floor($n.Length / 3) * 3
+          $b64 = @(foreach ($c in $cases) { [Convert]::ToBase64String($L.GetBytes($c.Substring(0, $full))) })
+          function Get-Hits([byte[]]$raw) {
+            $s = $L.GetString($raw); $h = 0
+            foreach ($p in $pats) {
+              $i = $s.IndexOf($p[0], [StringComparison]::Ordinal)
+              while ($i -ge 0) {
+                if ($i -lt $p[1] -or $s[$i - $p[1]] -notmatch '[A-Za-z0-9_]') { $h++ }
+                $i = $s.IndexOf($p[0], $i + 1, [StringComparison]::Ordinal)
+              }
+            }
+            foreach ($b in $b64) { $i = $s.IndexOf($b, [StringComparison]::Ordinal); while ($i -ge 0) { $h++; $i = $s.IndexOf($b, $i + 1, [StringComparison]::Ordinal) } }
+            return $h
+          }
+          $files = @(Get-ChildItem -LiteralPath $env:OUT -Recurse -File -Force)
+          if ($files.Count -lt 10) { throw "leak guard saw only $($files.Count) files; refusing to upload" }
+          $bad = 0
+          foreach ($f in $files) {
+            $c = Get-Hits ([IO.File]::ReadAllBytes($f.FullName))
+            if ($c -gt 0) { $bad++; Write-Host "::error::leak guard hit: $($f.Name) real=$c" }
+          }
+          if ($bad -gt 0) { throw "leak guard blocked $bad file(s)" }
+          Write-Host "leak guard clean: $($files.Count) file(s)"
+
+      - name: Package
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $stage = Join-Path $env:RUNNER_TEMP 'release'
+          New-Item -ItemType Directory -Force -Path $stage | Out-Null
+          $zipName = "XIVTCLauncher-$env:TAG.zip"
+          $zip = Join-Path $stage $zipName
+          Add-Type -AssemblyName System.IO.Compression.FileSystem
+          [IO.Compression.ZipFile]::CreateFromDirectory($env:OUT, $zip, [IO.Compression.CompressionLevel]::Optimal, $false)
+          $sha = (Get-FileHash -LiteralPath $zip -Algorithm SHA256).Hash.ToLowerInvariant()
+          $manifest = [ordered]@{
+            schema_version = 1
+            tag_name = $env:TAG
+            version = $env:VER
+            name = "XIV TC Launcher $env:TAG"
+            published_at = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+            body = "台服啟動器 $env:VER；Dalamud 從 ffxiv-tc-port/Dalamud 的 release 下載。"
+            assets = @([ordered]@{
+              name = $zipName
+              browser_download_url = "$env:GITHUB_SERVER_URL/$env:GITHUB_REPOSITORY/releases/download/$env:TAG/$zipName"
+              size = (Get-Item -LiteralPath $zip).Length
+              sha256 = $sha
+            })
+          }
+          Set-Content -LiteralPath (Join-Path $stage 'latest-release.json') -Value (($manifest | ConvertTo-Json -Depth 10) + "`n") -NoNewline -Encoding utf8NoBOM
+          Get-ChildItem -LiteralPath $stage | ForEach-Object { Write-Host "$($_.Name) $($_.Length) sha256=$((Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash)" }
+          "STAGE=$stage", "ZIP_NAME=$zipName", "ZIP_SHA=$sha" | Out-File -FilePath $env:GITHUB_ENV -Append -Encoding utf8
+
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $repo = $env:GITHUB_REPOSITORY
+          $notes = @(
+            "台服啟動器 $env:VER"
+            ''
+            '- 需要 .NET 8 Desktop Runtime；解壓後執行 FFXIVSimpleLauncher.exe。'
+            '- 「自動下載」模式的 Dalamud 來源：ffxiv-tc-port/Dalamud 的 latest release。'
+            "- Commit：$env:GITHUB_SHA（$env:GITHUB_REF_NAME）"
+            "- SHA-256（$env:ZIP_NAME）：$env:ZIP_SHA"
+            "- 建置：$env:GITHUB_SERVER_URL/$repo/actions/runs/$env:GITHUB_RUN_ID"
+          ) -join "`n"
+          $notesFile = Join-Path $env:RUNNER_TEMP 'notes.md'
+          Set-Content -LiteralPath $notesFile -Value $notes -Encoding utf8NoBOM
+          $files = @((Join-Path $env:STAGE $env:ZIP_NAME), (Join-Path $env:STAGE 'latest-release.json'))
+          if ($env:REPUBLISH -eq 'true') {
+            gh api -X PATCH "repos/$repo/git/refs/tags/$env:TAG" -f sha=$env:GITHUB_SHA -F force=true | Out-Null
+            if ($LASTEXITCODE) { throw 'moving tag failed' }
+            gh release upload $env:TAG @files --repo $repo --clobber
+            if ($LASTEXITCODE) { throw 'upload failed' }
+            gh release edit $env:TAG --repo $repo --title "XIV TC Launcher $env:TAG" --notes-file $notesFile "--latest=$env:MAKE_LATEST"
+            if ($LASTEXITCODE) { throw 'edit failed' }
+          } else {
+            gh release create $env:TAG @files --repo $repo --target $env:GITHUB_SHA --title "XIV TC Launcher $env:TAG" --notes-file $notesFile "--latest=$env:MAKE_LATEST"
+            if ($LASTEXITCODE) { throw 'create failed' }
+          }
+          gh release view $env:TAG --repo $repo --json tagName,assets --jq '{tag: .tagName, assets: [.assets[] | {name, size}]}'

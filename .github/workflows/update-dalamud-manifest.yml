@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Update manifest from yanmucorp/Dalamud latest release
+      - name: Update manifest from ffxiv-tc-port/Dalamud latest release
         id: update
         shell: pwsh
         run: |
@@ -24,7 +24,7 @@ jobs:
 
           $manifestPath = "cdn/dalamud/latest-release.json"
           $release = Invoke-RestMethod `
-            -Uri "https://api.github.com/repos/yanmucorp/Dalamud/releases/latest" `
+            -Uri "https://api.github.com/repos/ffxiv-tc-port/Dalamud/releases/latest" `
             -Headers @{ "User-Agent" = "XIVTCLauncher-manifest-updater" }
 
           $requiredAssetNames = @("latest.7z", "hashes.json")
@@ -36,12 +36,14 @@ jobs:
               throw "Required asset '$assetName' was not found in release $($release.tag_name)."
             }
 
-            $assets += [ordered]@{
+            $entry = [ordered]@{
               name = $asset.name
               browser_download_url = $asset.browser_download_url
               mirrors = @()
               size = $asset.size
             }
+            if ("$($asset.digest)" -match '^sha256:([0-9a-f]{64})$') { $entry.sha256 = $Matches[1] }
+            $assets += $entry
           }
 
           $manifest = [ordered]@{
@@ -83,7 +85,7 @@ jobs:
         run: |
           $ErrorActionPreference = "Stop"
           Invoke-RestMethod `
-            -Uri "https://purge.jsdelivr.net/gh/cycleapple/XIVTCLauncher@main/cdn/dalamud/latest-release.json" `
+            -Uri "https://purge.jsdelivr.net/gh/ffxiv-tc-port/XIVTCLauncher@main/cdn/dalamud/latest-release.json" `
             -Headers @{ "User-Agent" = "XIVTCLauncher-manifest-updater" } |
             ConvertTo-Json -Depth 10
 # workflow re-registration trigger 2026-10-26T13:40:57Z

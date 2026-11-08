@@ -163,6 +163,42 @@ dotnet publish -c Release -r win-x64 --self-contained false
 
 設定檔儲存於 `%APPDATA%/FFXIVSimpleLauncher/settings.json`
 
+### 連線診斷
+
+「設定 → 網路設定 → 連線診斷」可逐項檢查登入網頁、帳號服務、大廳、更新服務及 Dalamud／GitHub。每項最多等待 8 秒，支援取消、重新檢測及複製報告。報告顯示本機的單次回應耗時與檢測時間，不代表全體伺服器狀態或遊戲內延遲；TCP 可連線也不代表帳號登入或各個世界正常。下載類 HTTP 檢測使用設定視窗目前選擇的 DNS；TCP 檢測使用系統解析與直接連線。若未讀到本地遊戲版本，會標示版本檢查未檢測。
+
+### 略過 Patch Server 檢查
+
+啟動時會自動檢查遊戲更新。Patch Server 檢查失敗時，會再確認遊戲大廳連線；大廳可連且有本地版本時，主畫面提供「本次略過並登入」。此選擇僅用於該次登入嘗試，不寫入設定；取消或結束後清除，下次啟動仍正常檢查。已確認有更新時不提供這個選項。Patch Server 與大廳檢測各最多等待 8 秒，完整診斷仍可從設定手動執行。
+
+更新伺服器無法連線時，可在「設定 → 進階設定」開啟「略過遊戲更新檢查（Patch Server）」。儲存後會略過啟動與登入時的 Patch Server 請求，保留正常帳號登入與本地更新包清理。此選項預設關閉，不代表遊戲已是最新版本；請確認遊戲已更新，伺服器恢復後關閉此選項。版本不相容或登入伺服器無法連線時仍可能無法進入遊戲。
+
+### 下載 DNS
+
+在「設定 → 進階設定 → 啟動器下載 DNS」選擇「系統預設」、Cloudflare（1.1.1.1）或 Google（8.8.8.8）。
+儲存後重新開啟啟動器生效。一般使用者可先使用「GitHub 下載加速」檢測下載速度。
+
+- 預設沿用系統 DNS 與 Proxy；舊版設定升級後維持此行為。
+- Cloudflare／Google 使用 DNS over HTTPS，透過服務商 IP 建立連線，保留正常的 HTTPS 憑證驗證；不依賴系統 DNS 解析服務商名稱。
+- 套用於啟動器更新、Dalamud、Assets、.NET Runtime 與遊戲更新下載。不修改 Windows DNS，不套用於登入網頁、登入 API、遊戲或遊戲內插件。
+- 自訂 DNS 模式使用直接連線，不經系統 Proxy。需要 Proxy 時請選「系統預設」。解析失敗會回報錯誤，不會偷偷改用系統 DNS。
+- DNS 無法保證改善路由壅塞；GitHub 下載速度可使用下方的「GitHub 下載加速」功能檢測。
+
+### GitHub 下載加速
+
+在「設定 → GitHub 下載加速」按「檢測下載速度」，會完整搜尋 Fastly 官方範圍內的候選位址，驗證 GitHub HTTPS，並與目前系統路線交錯測試三輪 Raw 與 Release 下載。
+主畫面顯示目前與建議連線的速度比較；IP、每條路線成功次數及 Raw 回應時間收於進階詳情。候選路線必須各輪成功、至少 3 Mbps，且比穩定的目前路線快至少 25%，才會提供套用建議。
+
+- 檢測時顯示動態進度條、目前步驟與已耗時。不修改設定，支援取消；完整檢測最多取樣約 30 MB 安裝包資料，另有 HTTPS 等連線開銷。
+- 套用會要求管理員權限，並再次驗證位址屬於 Fastly 且能提供兩個 GitHub 網域的 HTTPS 內容。
+- 只在 Windows hosts 寫入 XIVTCLauncher 標記區塊，指定 `raw.githubusercontent.com` 和 `release-assets.githubusercontent.com`。修改前保留 `hosts.xivtc-github.bak`；還原只移除自己的區塊，保留其他內容。
+- 遇到其他工具設定相同網域時拒絕覆蓋，請先使用原工具還原。需要系統 Proxy 的網路不適合本功能的直接連線測試。
+- 系統 hosts 可涵蓋遊戲內使用系統解析的 Dalamud；啟動器的自訂 DoH 對這兩個網域也會優先使用自己的 hosts 區塊。其他網域維持原 DNS 選擇。
+- 套用或還原後請完整重開啟動器與遊戲。換網路或速度變慢時重新檢測；不會在每次登入自動掃描或修改。
+- 不涵蓋 `github.com`、`api.github.com` 或其他插件作者的網站，不保證改善所有網路問題。
+
+節點探索方式參考 [AFAlimru/fastly-hosts-adjust](https://github.com/AFAlimru/fastly-hosts-adjust)，MIT 授權聲明隨發布包附於 `licenses/fastly-hosts-adjust.txt`。
+
 ### 遊戲路徑
 
 台灣版 FFXIV 預設安裝路徑：

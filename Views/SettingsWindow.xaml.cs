@@ -9,6 +9,10 @@ namespace FFXIVSimpleLauncher.Views;
 
 public partial class SettingsWindow : Window
 {
+    private void ConnectionDiagnostics_Click(object sender, RoutedEventArgs e) =>
+        new ConnectionDiagnosticsWindow(GamePathTextBox.Text.Trim(),
+            (DownloadDnsProvider)Math.Max(0, DownloadDnsComboBox.SelectedIndex)) { Owner = this }.ShowDialog();
+    private void GitHubRoutes_Click(object sender, RoutedEventArgs e) => new GitHubRouteWindow { Owner = this }.ShowDialog();
     public LauncherSettings Settings { get; private set; }
     private readonly bool _isFirstRun;
 
@@ -25,6 +29,8 @@ public partial class SettingsWindow : Window
             SelectedAccountId = settings.SelectedAccountId,
             DalamudProfiles = settings.DalamudProfiles,
             GamePath = settings.GamePath,
+            DownloadDns = settings.DownloadDns,
+            SkipPatchServerCheck = settings.SkipPatchServerCheck,
             EnableDalamud = settings.EnableDalamud,
             DalamudInjectionDelay = settings.DalamudInjectionDelay,
             DalamudSourceMode = settings.DalamudSourceMode,
@@ -39,6 +45,8 @@ public partial class SettingsWindow : Window
 
         // Load settings into UI
         GamePathTextBox.Text = Settings.GamePath;
+        SkipPatchServerCheckBox.IsChecked = Settings.SkipPatchServerCheck;
+        DownloadDnsComboBox.SelectedIndex = Enum.IsDefined(Settings.DownloadDns) ? (int)Settings.DownloadDns : 0;
         EnableDalamudCheckBox.IsChecked = Settings.EnableDalamud;
         InjectionDelayTextBox.Text = Settings.DalamudInjectionDelay.ToString();
         LocalDalamudPathTextBox.Text = Settings.LocalDalamudPath;
@@ -201,6 +209,8 @@ public partial class SettingsWindow : Window
         }
 
         Settings.GamePath = gamePath;
+        Settings.DownloadDns = (DownloadDnsProvider)DownloadDnsComboBox.SelectedIndex;
+        Settings.SkipPatchServerCheck = SkipPatchServerCheckBox.IsChecked == true;
         Settings.EnableDalamud = EnableDalamudCheckBox.IsChecked ?? false;
         Settings.DalamudInjectionDelay = int.TryParse(InjectionDelayTextBox.Text, out var delay) ? delay : 0;
         Settings.DalamudSourceMode = AutoDownloadRadio.IsChecked == true
@@ -242,4 +252,5 @@ public partial class SettingsWindow : Window
         DialogResult = false;
         Close();
     }
+
 }

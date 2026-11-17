@@ -450,7 +450,7 @@ public class LauncherUpdateService
             : null;
     }
 
-    // 版號是 7.25.0.N，第四段才是遞增位；缺的段補 0（1.19.0＝1.19.0.0），否則 System.Version 把缺段當 -1 而比較不等。
+    // 版號是 <台服版號基準>.N（7.25.0.N→7.30.0.N），四段依序數值比較；缺的段補 0（1.19.0＝1.19.0.0），否則 System.Version 把缺段當 -1 而比較不等。
     internal static int CompareVersions(string v1, string v2)
     {
         if (!Version.TryParse(v1, out var version1))

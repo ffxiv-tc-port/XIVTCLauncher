@@ -26,6 +26,9 @@ public sealed class LauncherUpdateServiceTests
     [InlineData("7.25.0.10", "7.25.0.9", 1)]
     [InlineData("1.19.0", "1.19.0.0", 0)]
     [InlineData("1.19.0.0", "7.25.0.1", -1)]
+    [InlineData("7.25.0.1", "7.30.0.1", -1)]
+    [InlineData("7.25.0.9", "7.30.0.1", -1)]
+    [InlineData("7.30.0.1", "7.25.0.9", 1)]
     public void CompareVersions_UsesNumericVersionOrdering(string current, string latest, int expected)
     {
         Assert.Equal(expected, Math.Sign(LauncherUpdateService.CompareVersions(current, latest)));
@@ -35,6 +38,9 @@ public sealed class LauncherUpdateServiceTests
     [InlineData("7.25.0.2", "7.25.0.2", false)]
     [InlineData("7.25.0.2", "7.25.0.3", true)]
     [InlineData("7.25.0.3", "7.25.0.2", false)]
+    [InlineData("7.25.0.1", "7.30.0.1", true)]
+    [InlineData("7.25.0.9", "7.30.0.1", true)]
+    [InlineData("7.30.0.1", "7.25.0.9", false)]
     public async Task CheckForUpdates_ComparesFourPartVersions(string current, string latest, bool expected)
     {
         var manifest = $$"""

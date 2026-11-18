@@ -1,21 +1,21 @@
 {
-  "tag_name": "v7.30.0.2",
-  "name": "Dalamud 7.30.0.2",
-  "published_at": "2026-11-17T18:30:25Z",
+  "tag_name": "v7.30.0.3",
+  "name": "Dalamud 7.30.0.3",
+  "published_at": "2026-11-18T02:05:33Z",
   "assets": [
     {
       "name": "latest.7z",
-      "browser_download_url": "https://github.com/ffxiv-tc-port/Dalamud/releases/download/v7.30.0.2/latest.7z",
+      "browser_download_url": "https://github.com/ffxiv-tc-port/Dalamud/releases/download/v7.30.0.3/latest.7z",
       "mirrors": [],
-      "size": 25365153,
-      "sha256": "6b849e8ed4abae3388dc1e38050e0be703e6ed7cf8f750c5c9e404cd63a79b11"
+      "size": 25367531,
+      "sha256": "11b1ef2073031e5cf2d82557298558a8dcf6ce84461bd538e2d4a8b754339717"
     },
     {
       "name": "hashes.json",
-      "browser_download_url": "https://github.com/ffxiv-tc-port/Dalamud/releases/download/v7.30.0.2/hashes.json",
+      "browser_download_url": "https://github.com/ffxiv-tc-port/Dalamud/releases/download/v7.30.0.3/hashes.json",
       "mirrors": [],
       "size": 6503,
-      "sha256": "0e2954f1990ca116abff85f7f75b955d87c53c43eaa48dceb02dd85250bd2e78"
+      "sha256": "80ce5fb2cc3a1bed0e7ebc23f7b1c9f296802414257fa448c4c9664306fba30a"
     }
   ]
 }
